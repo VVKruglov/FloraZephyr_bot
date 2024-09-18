@@ -1,0 +1,117 @@
+import logging
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, InputMediaPhoto
+from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler, MessageHandler, filters, ContextTypes
+
+
+
+# Логирование
+logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+
+# Каталог товаров
+catalog = [
+    {"name": "Сладкий комплимент", "price": 600, "image": "F:\FloraZephyr_bot\img\sk.jpg"},
+    {"name": "Розовый ранункулюс", "price": 800, "image": "F:\FloraZephyr_bot\img\\rr.jpg"},
+    {"name": "Воздушная роза", "price": 700, "image": "F:\FloraZephyr_bot\img\\vr.jpg"},
+    {"name": "Нежные лепестки", "price": 700, "image": "F:\FloraZephyr_bot\img\\nl.jpg"},
+    {"name": "Голубые гортензии", "price": 600, "image": "F:\FloraZephyr_bot\img\gg.jpg"},
+    {"name": "Корзина с цветами", "price": 2000, "image": "F:\FloraZephyr_bot\img\kf.jpg"},
+]
+
+# Стартовая команда
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    await update.message.reply_text('Привет! Добро пожаловать в ФлораЗефир! Нажми /catalog для просмотра товаров.')
+
+# Отображение каталога
+async def show_catalog(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    keyboard = [[InlineKeyboardButton(item['name'], callback_data=str(index))] for index, item in enumerate(catalog)]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    await update.message.reply_text('Выберите товар:', reply_markup=reply_markup)
+
+# Обработка выбора товара
+async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    query = update.callback_query
+    await query.answer()
+   # Проверяем, является ли callback_data числом (индекс товара)
+    
+    item_index = int(query.data)
+    if item_index >= 0 and item_index < len(catalog):  # Проверяем, что индекс допустим
+        item = catalog[item_index]
+        logger.info(f"Найден товар: {item['name']}")
+        
+        # Создаем кнопку "Заказать"
+        keyboard = [[InlineKeyboardButton("Заказать", callback_data=f"order_{item_index}")]]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+            
+           
+        try:
+            with open(item['image'], 'rb') as photo_file:
+                await query.message.reply_photo(
+                    photo=photo_file,
+                    caption=f"Товар: {item['name']}\nЦена: {item['price']} руб.",
+                    reply_markup=reply_markup
+                    )
+        except FileNotFoundError:
+            await query.message.reply_text(f"Изображение для товара {item['name']} не найдено.")
+    else:
+        logger.info("Индекс товара за пределами каталога.")
+        await query.message.reply_text("Товар не найден.")
+    
+
+
+# Обработка нажатия на кнопку "Заказать"
+async def order(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    query = update.callback_query
+    await query.answer()
+
+    # Получаем индекс товара из callback_data
+    item_index = int(query.data.split('_')[1])
+    item = catalog[item_index]
+
+    # Сообщение для владельца о заказе
+    owner_chat_id = '1238848716'
+    order_message = (
+        f"ID: {query.from_user.id}\n"
+        f"Клиент: {query.from_user.username}\n"
+        f"Имя: {query.from_user.first_name} {query.from_user.last_name}\n"
+        f"Заказал: {item['name']}"
+    )
+
+    # Отправляем владельцу
+    await context.bot.send_message(chat_id=owner_chat_id, text=order_message)
+
+    # Подтверждение клиенту
+    await query.message.reply_text(f"Ваш заказ на {item['name']} был отправлен! Мы свяжемся с вами.")
+
+# Обработка вопросов (например, доставка и цена)
+async def handle_faq(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    text = update.message.text.lower()
+    if 'цена' in text:
+        await update.message.reply_text('Цены на наши товары начинаются от 600 руб. Подробнее нажмите /catalog')
+    elif 'цену' in text:
+        await update.message.reply_text('Цены на наши товары начинаются от 600 руб. Подробнее нажмите /catalog')
+    elif 'стоимость' in text:
+        await update.message.reply_text('Цены на наши товары начинаются от 600 руб. Подробнее нажмите /catalog')
+    elif 'доставка' in text:
+        await update.message.reply_text('Мы доставляем по всему городу. Доставка - 200 руб.')
+    elif 'состав' in text:
+        await update.message.reply_text('Состав: яичный белок, натуральный сок, сахар, агар-агар, пищевые красители')
+    else:
+        await update.message.reply_text('Я могу вам помочь узнать состав, цену и ответить на вопрос по доставке. Просто введите соответствующие слова')
+
+# Запуск бота
+def main():
+    app = ApplicationBuilder().token('7529805135:AAEYl0ZJ054C7LJFPy-GSsg6nyJC5UXsHOQ').build()
+
+    app.add_handler(CommandHandler("start", start))
+    app.add_handler(CommandHandler("catalog", show_catalog))
+    app.add_handler(CallbackQueryHandler(button, pattern=r'^\d+$'))
+    app.add_handler(CallbackQueryHandler(order, pattern=r'^order_\d+$'))
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_faq))
+
+    app.run_polling()
+
+if __name__ == '__main__':
+    main()
+
