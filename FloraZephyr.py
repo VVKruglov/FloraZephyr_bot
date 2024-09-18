@@ -11,12 +11,12 @@ logger = logging.getLogger(__name__)
 
 # Каталог товаров
 catalog = [
-    {"name": "Сладкий комплимент", "price": 600, "image": "F:\FloraZephyr_bot\img\sk.jpg"},
-    {"name": "Розовый ранункулюс", "price": 800, "image": "F:\FloraZephyr_bot\img\\rr.jpg"},
-    {"name": "Воздушная роза", "price": 700, "image": "F:\FloraZephyr_bot\img\\vr.jpg"},
-    {"name": "Нежные лепестки", "price": 700, "image": "F:\FloraZephyr_bot\img\\nl.jpg"},
-    {"name": "Голубые гортензии", "price": 600, "image": "F:\FloraZephyr_bot\img\gg.jpg"},
-    {"name": "Корзина с цветами", "price": 2000, "image": "F:\FloraZephyr_bot\img\kf.jpg"},
+    {"name": "Сладкий комплимент", "price": 600, "image": "img\sk.jpg"},
+    {"name": "Розовый ранункулюс", "price": 800, "image": "img\\rr.jpg"},
+    {"name": "Воздушная роза", "price": 700, "image": "img\\vr.jpg"},
+    {"name": "Нежные лепестки", "price": 700, "image": "img\\nl.jpg"},
+    {"name": "Голубые гортензии", "price": 600, "image": "img\gg.jpg"},
+    {"name": "Корзина с цветами", "price": 2000, "image": "img\kf.jpg"},
 ]
 
 # Стартовая команда
