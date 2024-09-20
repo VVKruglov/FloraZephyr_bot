@@ -1,24 +1,23 @@
-import logging
+# import logging
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, InputMediaPhoto
 from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler, MessageHandler, filters, ContextTypes
 
 
 
 # Логирование
-logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
-logger = logging.getLogger(__name__)
+# logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
+# logger = logging.getLogger(__name__)
 
 
 # Каталог товаров
 catalog = [
-    {"name": "Сладкий комплимент", "price": 600, "image": "img\sk.jpg"},
-    {"name": "Розовый ранункулюс", "price": 800, "image": "img\\rr.jpg"},
-    {"name": "Воздушная роза", "price": 700, "image": "img\\vr.jpg"},
-    {"name": "Нежные лепестки", "price": 700, "image": "img\\nl.jpg"},
-    {"name": "Голубые гортензии", "price": 600, "image": "img\gg.jpg"},
-    {"name": "Корзина с цветами", "price": 2000, "image": "img\kf.jpg"},
+    {"name": "Сладкий комплимент", "price": 600, "image": "img/sk.jpg"},
+    {"name": "Розовый ранункулюс", "price": 800, "image": "img/rr.jpg"},
+    {"name": "Воздушная роза", "price": 700, "image": "img/vr.jpg"},
+    {"name": "Нежные лепестки", "price": 700, "image": "img/nl.jpg"},
+    {"name": "Голубые гортензии", "price": 600, "image": "img/gg.jpg"},
+    {"name": "Корзина с цветами", "price": 2000, "image": "img/kf.jpg"},
 ]
-
 # Стартовая команда
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await update.message.reply_text('Привет! Добро пожаловать в ФлораЗефир! Нажми /catalog для просмотра товаров.')
@@ -38,7 +37,7 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     item_index = int(query.data)
     if item_index >= 0 and item_index < len(catalog):  # Проверяем, что индекс допустим
         item = catalog[item_index]
-        logger.info(f"Найден товар: {item['name']}")
+        print(f"Найден товар: {item['name']}")
         
         # Создаем кнопку "Заказать"
         keyboard = [[InlineKeyboardButton("Заказать", callback_data=f"order_{item_index}")]]
@@ -55,7 +54,7 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         except FileNotFoundError:
             await query.message.reply_text(f"Изображение для товара {item['name']} не найдено.")
     else:
-        logger.info("Индекс товара за пределами каталога.")
+        print("Индекс товара за пределами каталога.")
         await query.message.reply_text("Товар не найден.")
     
 
@@ -94,7 +93,12 @@ async def handle_faq(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
     elif 'стоимость' in text:
         await update.message.reply_text('Цены на наши товары начинаются от 600 руб. Подробнее нажмите /catalog')
     elif 'доставка' in text:
-        await update.message.reply_text('Мы доставляем по всему городу. Доставка - 200 руб.')
+        await update.message.reply_text('Яндекс Go\n'
+    'Этот вид доставки вы оплачиваете самостоятельно. В согласованное заранее время я сообщаю вам стоимость, '
+    'которую рассчитало приложение до вашего адреса и отправляю ваш заказ. Вы оплачиваете стоимость доставки '
+    'курьеру при получении.\n\n'
+    'Самовывоз\n'
+    'Забрать свой заказ вы можете по адресу: г. Саратов, Ленинский район (Солнечный), ул. Уфимцева д. 3')
     elif 'состав' in text:
         await update.message.reply_text('Состав: яичный белок, натуральный сок, сахар, агар-агар, пищевые красители')
     else:
