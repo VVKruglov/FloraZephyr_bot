@@ -78,18 +78,24 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 async def promotion_button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query = update.callback_query
     await query.answer()
+
+    # Получаем индекс акции из callback_data
     item_index = int(query.data.split('_')[1])
+
     if item_index >= 0 and item_index < len(promotions):
         promo = promotions[item_index]
+        
         try:
+            # Открываем и отправляем изображение акции
             with open(promo['image'], 'rb') as photo_file:
                 await query.message.reply_photo(
                     photo=photo_file,
-                    caption=f"{promo['description']}\nЦена: {promo['price']} руб.",
+                    caption=f"{promo['name']}\n{promo['description']}",
                 )
         except FileNotFoundError:
             await query.message.reply_text(f"Изображение для акции {promo['name']} не найдено.")
-
+    else:
+        await query.message.reply_text("Акция не найдена.")
 
 # Обработка нажатия на кнопку "Заказать"
 async def order(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -145,6 +151,7 @@ def main():
     app.add_handler(CommandHandler("promotion", show_promotions))
     app.add_handler(CallbackQueryHandler(button, pattern=r'^\d+$'))
     app.add_handler(CallbackQueryHandler(order, pattern=r'^order_\d+$'))
+    app.add_handler(CallbackQueryHandler(promotion_button, pattern=r'^promo_\d+$'))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_faq))
 
     app.run_polling()
