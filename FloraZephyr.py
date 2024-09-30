@@ -15,18 +15,35 @@ catalog = [
     {"name": "Розовый ранункулюс", "price": 800, "image": "img/rr.jpg"},
     {"name": "Воздушная роза", "price": 700, "image": "img/vr.jpg"},
     {"name": "Нежные лепестки", "price": 700, "image": "img/nl.jpg"},
-    {"name": "Голубые гортензии", "price": 600, "image": "img/gg.jpg"},
+    {"name": "Голубые гортензии", "price": 800, "image": "img/gg.jpg"},
     {"name": "Корзина с цветами", "price": 2000, "image": "img/kf.jpg"},
+]
+
+# Каталог акций
+promotions = [
+    {"name": "Скидка на первый заказ!", "image": "img/a.jpg", "description": "Скидка 20% на первый заказ!"},
+    {"name": "Скидка на заказ от трех композиций!", "image": "img/a.jpg", "description": "Скидка 25% на заказ от трех композиций!"},
+    {"name": "В честь дня учителя", "image": "img/a.jpg", "description": "Скидка 30% на любую композицию с 1 по 5 октября"}
 ]
 # Стартовая команда
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    await update.message.reply_text('Привет! Добро пожаловать в ФлораЗефир! Нажми /catalog для просмотра товаров.')
+    await update.message.reply_text('Привет! Добро пожаловать в ФлораЗефир!\n' 
+                                     'Здесь ты можешь узнать информацию о ценах, доставке, составе.' 
+                                     'Достаточно написать соответствующие слова.\n' 
+                                     'Нажми /catalog для просмотра товаров.\n'
+                                     'Нажми /promotion, чтобы узнать о наших акциях')
 
 # Отображение каталога
 async def show_catalog(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     keyboard = [[InlineKeyboardButton(item['name'], callback_data=str(index))] for index, item in enumerate(catalog)]
     reply_markup = InlineKeyboardMarkup(keyboard)
     await update.message.reply_text('Выберите товар:', reply_markup=reply_markup)
+    
+# Отображение акций
+async def show_promotions(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    keyboard = [[InlineKeyboardButton(item['name'], callback_data=f"promo_{index}")] for index, item in enumerate(promotions)]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    await update.message.reply_text('Текущие акции. Нажми, чтобы узнать подробнее:', reply_markup=reply_markup)
 
 # Обработка выбора товара
 async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -57,6 +74,21 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         print("Индекс товара за пределами каталога.")
         await query.message.reply_text("Товар не найден.")
     
+# Обработка выбора акционного товара
+async def promotion_button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    query = update.callback_query
+    await query.answer()
+    item_index = int(query.data.split('_')[1])
+    if item_index >= 0 and item_index < len(promotions):
+        promo = promotions[item_index]
+        try:
+            with open(promo['image'], 'rb') as photo_file:
+                await query.message.reply_photo(
+                    photo=photo_file,
+                    caption=f"{promo['description']}\nЦена: {promo['price']} руб.",
+                )
+        except FileNotFoundError:
+            await query.message.reply_text(f"Изображение для акции {promo['name']} не найдено.")
 
 
 # Обработка нажатия на кнопку "Заказать"
@@ -100,7 +132,7 @@ async def handle_faq(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
     'Самовывоз\n'
     'Забрать свой заказ вы можете по адресу: г. Саратов, Ленинский район (Солнечный), ул. Уфимцева д. 3')
     elif 'состав' in text:
-        await update.message.reply_text('Состав: яичный белок, натуральный сок, сахар, агар-агар, пищевые красители')
+        await update.message.reply_text('Состав: яичный белок, яблочный сок, сахар, агар-агар, пищевые красители')
     else:
         await update.message.reply_text('Я могу вам помочь узнать состав, цену и ответить на вопрос по доставке. Просто введите соответствующие слова')
 
@@ -110,6 +142,7 @@ def main():
 
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("catalog", show_catalog))
+    app.add_handler(CommandHandler("promotion", show_promotions))
     app.add_handler(CallbackQueryHandler(button, pattern=r'^\d+$'))
     app.add_handler(CallbackQueryHandler(order, pattern=r'^order_\d+$'))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_faq))
