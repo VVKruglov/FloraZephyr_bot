@@ -10,21 +10,31 @@ from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandle
 
 
 # Каталог товаров
-catalog = [
-    {"name": "Сладкий комплимент", "price": 600, "image": "img/sk.jpg"},
-    {"name": "Розовый ранункулюс", "price": 800, "image": "img/rr.jpg"},
-    {"name": "Воздушная роза", "price": 700, "image": "img/vr.jpg"},
-    {"name": "Нежные лепестки", "price": 700, "image": "img/nl.jpg"},
-    {"name": "Голубые гортензии", "price": 800, "image": "img/gg.jpg"},
-    {"name": "Корзина с цветами", "price": 2000, "image": "img/kf.jpg"},
-]
+catalog = {
+    "Сладкая осень": [
+        {"name": "Ежики и грибочки с варенной сгущенкой", "price": 400, "image": "img/eg.jpg"},
+        {"name": "Тыковки и мухоморчики с варенной сгущенкой", "price": 400, "image": "img/tm.jpg"},
+        {"name": "Грибочки с варенной сгущенкой", "price": 400, "image": "img/gr.jpg"}
+    ],
+    "Зефирные цветы": [
+        {"name": "Нежные лепестки", "price": 700, "image": "img/nl.jpg"},
+        {"name": "Голубые гортензии", "price": 800, "image": "img/gg.jpg"},
+        {"name": "Корзина с цветами", "price": 2000, "image": "img/kf.jpg"},
+        {"name": "Сладкий комплимент", "price": 600, "image": "img/sk.jpg"},
+        {"name": "Розовый ранункулюс", "price": 800, "image": "img/rr.jpg"},
+        {"name": "Воздушная роза", "price": 700, "image": "img/vr.jpg"}
+    ]
+}
+
 
 # Каталог акций
 promotions = [
-    {"name": "Скидка на первый заказ!", "image": "img/a.jpg", "description": "Скидка 20% на первый заказ!"},
-    {"name": "Скидка на заказ от трех композиций!", "image": "img/a.jpg", "description": "Скидка 25% на заказ от трех композиций!"},
-    {"name": "В честь дня учителя", "image": "img/a.jpg", "description": "Скидка 30% на любую композицию с 1 по 5 октября"}
+    {"name": "Скидка на первый заказ!", "image": "img/a.jpg", "description": "Скидка 20% на первый заказ"},
+    {"name": "Скидка на заказ от трех композиций!", "image": "img/a.jpg", "description": "Скидка 25% на заказ от трех композиций"},
+    {"name": "Xэллоуин", "image": "img/a.jpg", "description": "Скидка 30% на любую композицию с 15 по 31 октября"}
 ]
+
+
 # Стартовая команда
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await update.message.reply_text('Привет! Добро пожаловать в ФлораЗефир!\n' 
@@ -33,17 +43,38 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
                                      'Нажми /catalog для просмотра товаров.\n'
                                      'Нажми /promotion, чтобы узнать о наших акциях')
 
-# Отображение каталога
+
+# Отображение каталога с выбором разделов
 async def show_catalog(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    keyboard = [[InlineKeyboardButton(item['name'], callback_data=str(index))] for index, item in enumerate(catalog)]
+    sections = list(catalog.keys())  # Получаем названия разделов каталога
+    keyboard = [[InlineKeyboardButton(section, callback_data=f"section_{section}")] for section in sections]
     reply_markup = InlineKeyboardMarkup(keyboard)
-    await update.message.reply_text('Выберите товар:', reply_markup=reply_markup)
+    await update.message.reply_text('Выберите раздел каталога:', reply_markup=reply_markup)
+    
+    
+# Обработка выбора раздела
+async def section_button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    query = update.callback_query
+    await query.answer()
+
+    # Получаем название раздела из callback_data
+    section_name = query.data.split('_')[1]
+
+    if section_name in catalog:
+        items = catalog[section_name]
+        keyboard = [[InlineKeyboardButton(item['name'], callback_data=str(index))] for index, item in enumerate(items)]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        await query.message.reply_text(f"Выберите товар из раздела '{section_name}':", reply_markup=reply_markup)
+    else:
+        await query.message.reply_text("Раздел не найден.")
+    
     
 # Отображение акций
 async def show_promotions(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     keyboard = [[InlineKeyboardButton(item['name'], callback_data=f"promo_{index}")] for index, item in enumerate(promotions)]
     reply_markup = InlineKeyboardMarkup(keyboard)
     await update.message.reply_text('Текущие акции. Нажми, чтобы узнать подробнее:', reply_markup=reply_markup)
+
 
 # Обработка выбора товара
 async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -74,6 +105,7 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         print("Индекс товара за пределами каталога.")
         await query.message.reply_text("Товар не найден.")
     
+    
 # Обработка выбора акционного товара
 async def promotion_button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query = update.callback_query
@@ -96,6 +128,7 @@ async def promotion_button(update: Update, context: ContextTypes.DEFAULT_TYPE) -
             await query.message.reply_text(f"Изображение для акции {promo['name']} не найдено.")
     else:
         await query.message.reply_text("Акция не найдена.")
+
 
 # Обработка нажатия на кнопку "Заказать"
 async def order(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -121,15 +154,16 @@ async def order(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     # Подтверждение клиенту
     await query.message.reply_text(f"Ваш заказ на {item['name']} был отправлен! Мы свяжемся с вами.")
 
+
 # Обработка вопросов (например, доставка и цена)
 async def handle_faq(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     text = update.message.text.lower()
     if 'цена' in text:
-        await update.message.reply_text('Цены на наши товары начинаются от 600 руб. Подробнее нажмите /catalog')
+        await update.message.reply_text('Цены на наши товары начинаются от 400 руб. Подробнее нажмите /catalog')
     elif 'цену' in text:
-        await update.message.reply_text('Цены на наши товары начинаются от 600 руб. Подробнее нажмите /catalog')
+        await update.message.reply_text('Цены на наши товары начинаются от 400 руб. Подробнее нажмите /catalog')
     elif 'стоимость' in text:
-        await update.message.reply_text('Цены на наши товары начинаются от 600 руб. Подробнее нажмите /catalog')
+        await update.message.reply_text('Цены на наши товары начинаются от 400 руб. Подробнее нажмите /catalog')
     elif 'доставка' in text:
         await update.message.reply_text('Яндекс Go\n'
     'Этот вид доставки вы оплачиваете самостоятельно. В согласованное заранее время я сообщаю вам стоимость, '
@@ -142,6 +176,8 @@ async def handle_faq(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
     else:
         await update.message.reply_text('Я могу вам помочь узнать состав, цену и ответить на вопрос по доставке. Просто введите соответствующие слова')
 
+
+
 # Запуск бота
 def main():
     app = ApplicationBuilder().token('7529805135:AAEYl0ZJ054C7LJFPy-GSsg6nyJC5UXsHOQ').build()
@@ -149,6 +185,7 @@ def main():
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("catalog", show_catalog))
     app.add_handler(CommandHandler("promotion", show_promotions))
+    app.add_handler(CallbackQueryHandler(section_button, pattern=r'^section_'))
     app.add_handler(CallbackQueryHandler(button, pattern=r'^\d+$'))
     app.add_handler(CallbackQueryHandler(order, pattern=r'^order_\d+$'))
     app.add_handler(CallbackQueryHandler(promotion_button, pattern=r'^promo_\d+$'))
