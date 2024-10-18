@@ -59,6 +59,7 @@ async def section_button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 
     # Получаем название раздела из callback_data
     section_name = query.data.split('_')[1]
+    context.user_data['current_section'] = section_name
 
     if section_name in catalog:
         items = catalog[section_name]
@@ -80,29 +81,34 @@ async def show_promotions(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query = update.callback_query
     await query.answer()
-   # Проверяем, является ли callback_data числом (индекс товара)
     
+    # Получаем раздел каталога и индекс товара
+    section_name = context.user_data.get('current_section')
+    if not section_name:
+        await query.message.reply_text("Раздел не выбран.")
+        return
+
+    items = catalog.get(section_name, [])
     item_index = int(query.data)
-    if item_index >= 0 and item_index < len(catalog):  # Проверяем, что индекс допустим
-        item = catalog[item_index]
+    
+    if 0 <= item_index < len(items):
+        item = items[item_index]
         print(f"Найден товар: {item['name']}")
-        
+
         # Создаем кнопку "Заказать"
-        keyboard = [[InlineKeyboardButton("Заказать", callback_data=f"order_{item_index}")]]
+        keyboard = [[InlineKeyboardButton("Заказать", callback_data=f"order_{section_name}_{item_index}")]]
         reply_markup = InlineKeyboardMarkup(keyboard)
-            
-           
+
         try:
             with open(item['image'], 'rb') as photo_file:
                 await query.message.reply_photo(
                     photo=photo_file,
                     caption=f"Товар: {item['name']}\nЦена: {item['price']} руб.",
                     reply_markup=reply_markup
-                    )
+                )
         except FileNotFoundError:
             await query.message.reply_text(f"Изображение для товара {item['name']} не найдено.")
     else:
-        print("Индекс товара за пределами каталога.")
         await query.message.reply_text("Товар не найден.")
     
     
@@ -135,24 +141,28 @@ async def order(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query = update.callback_query
     await query.answer()
 
-    # Получаем индекс товара из callback_data
-    item_index = int(query.data.split('_')[1])
-    item = catalog[item_index]
+    # Получаем раздел и индекс товара из callback_data
+    section_name, item_index = query.data.split('_')[1], int(query.data.split('_')[2])
+    
+    if section_name in catalog:
+        item = catalog[section_name][item_index]
 
-    # Сообщение для владельца о заказе
-    owner_chat_id = '1238848716'
-    order_message = (
-        f"ID: {query.from_user.id}\n"
-        f"Клиент: {query.from_user.username}\n"
-        f"Имя: {query.from_user.first_name} {query.from_user.last_name}\n"
-        f"Заказал: {item['name']}"
-    )
+        # Сообщение для владельца о заказе
+        owner_chat_id = '1238848716'
+        order_message = (
+            f"ID: {query.from_user.id}\n"
+            f"Клиент: {query.from_user.username}\n"
+            f"Имя: {query.from_user.first_name} {query.from_user.last_name}\n"
+            f"Заказал: {item['name']}"
+        )
 
-    # Отправляем владельцу
-    await context.bot.send_message(chat_id=owner_chat_id, text=order_message)
+        # Отправляем владельцу
+        await context.bot.send_message(chat_id=owner_chat_id, text=order_message)
 
-    # Подтверждение клиенту
-    await query.message.reply_text(f"Ваш заказ на {item['name']} был отправлен! Мы свяжемся с вами.")
+        # Подтверждение клиенту
+        await query.message.reply_text(f"Ваш заказ на {item['name']} был отправлен! Мы свяжемся с вами.")
+    else:
+        await query.message.reply_text("Раздел не найден.")
 
 
 # Обработка вопросов (например, доставка и цена)
