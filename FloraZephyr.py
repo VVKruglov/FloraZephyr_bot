@@ -137,13 +137,14 @@ async def promotion_button(update: Update, context: ContextTypes.DEFAULT_TYPE) -
 
 
 # Обработка нажатия на кнопку "Заказать"
+# Обработка нажатия на кнопку "Заказать"
 async def order(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query = update.callback_query
     await query.answer()
 
     # Получаем раздел и индекс товара из callback_data
     section_name, item_index = query.data.split('_')[1], int(query.data.split('_')[2])
-    
+
     if section_name in catalog:
         item = catalog[section_name][item_index]
 
@@ -183,6 +184,8 @@ async def handle_faq(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
     'Забрать свой заказ вы можете по адресу: г. Саратов, Ленинский район (Солнечный), ул. Уфимцева д. 3')
     elif 'состав' in text:
         await update.message.reply_text('Состав: яичный белок, яблочный сок, сахар, агар-агар, пищевые красители')
+    elif 'акции' in text:
+        await update.message.reply_text('Нажми /promotion, чтобы узнать о наших акциях')
     else:
         await update.message.reply_text('Я могу вам помочь узнать состав, цену и ответить на вопрос по доставке. Просто введите соответствующие слова')
 
@@ -197,7 +200,7 @@ def main():
     app.add_handler(CommandHandler("promotion", show_promotions))
     app.add_handler(CallbackQueryHandler(section_button, pattern=r'^section_'))
     app.add_handler(CallbackQueryHandler(button, pattern=r'^\d+$'))
-    app.add_handler(CallbackQueryHandler(order, pattern=r'^order_\d+$'))
+    app.add_handler(CallbackQueryHandler(order, pattern=r'^order_[^_]+_\d+$'))
     app.add_handler(CallbackQueryHandler(promotion_button, pattern=r'^promo_\d+$'))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_faq))
 
