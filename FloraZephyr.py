@@ -186,6 +186,8 @@ async def handle_faq(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
         await update.message.reply_text('Состав: яичный белок, яблочный сок, сахар, агар-агар, пищевые красители')
     elif 'акции' in text:
         await update.message.reply_text('Нажми /promotion, чтобы узнать о наших акциях')
+    elif 'каталог' in text:
+        await update.message.reply_text('Нажми /catalog для просмотра товаров')
     else:
         await update.message.reply_text('Я могу вам помочь узнать состав, цену и ответить на вопрос по доставке. Просто введите соответствующие слова')
 
