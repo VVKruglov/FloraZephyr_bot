@@ -1,6 +1,7 @@
 # import logging
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, InputMediaPhoto
 from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler, MessageHandler, filters, ContextTypes
+from telegram import ReplyKeyboardMarkup, KeyboardButton
 
 
 
@@ -16,13 +17,18 @@ catalog = {
         {"name": "Тыковки и мухоморчики с варенной сгущенкой", "price": 400, "image": "img/tm.jpg"},
         {"name": "Грибочки с варенной сгущенкой", "price": 400, "image": "img/gr.jpg"}
     ],
-    "Зефирные цветы": [
+    "Зефирные цветы в квадратной коробке": [
         {"name": "Нежные лепестки", "price": 700, "image": "img/nl.jpg"},
         {"name": "Голубые гортензии", "price": 800, "image": "img/gg.jpg"},
         {"name": "Корзина с цветами", "price": 2000, "image": "img/kf.jpg"},
         {"name": "Сладкий комплимент", "price": 600, "image": "img/sk.jpg"},
         {"name": "Розовый ранункулюс", "price": 800, "image": "img/rr.jpg"},
         {"name": "Воздушная роза", "price": 700, "image": "img/vr.jpg"}
+    ],
+    "Зефирные цветы в круглой коробке": [
+        {"name": "Пионы с клубничным джемом", "price": 800, "image": "img/pkj.jpg"},
+        {"name": "Зефирные розы из клубники. Коробка 21×7см", "price": 800, "image": "img/kb.jpg"},
+        {"name": "Зефирные розы из клубники. Коробка 18×6.см", "price": 600, "image": "img/km.jpg"}
     ]
 }
 
@@ -31,17 +37,44 @@ catalog = {
 promotions = [
     {"name": "Скидка на первый заказ!", "image": "img/a.jpg", "description": "Скидка 20% на первый заказ"},
     {"name": "Скидка на заказ от трех композиций!", "image": "img/a.jpg", "description": "Скидка 25% на заказ от трех композиций"},
-    {"name": "Xэллоуин", "image": "img/a.jpg", "description": "Скидка 30% на любую композицию с 15 по 31 октября"}
+    {"name": "День Матери", "image": "img/a.jpg", "description": "Скидка 30% на любую композицию с 5 по 24 ноября"}
 ]
 
 
+# Функция для обработки команд меню
+async def handle_menu_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    text = update.message.text.lower()
+    if text == "каталог":
+        await show_catalog(update, context)
+    elif text == "акции":
+        await show_promotions(update, context)
+    elif text == "состав":
+        await update.message.reply_text('Состав: яичный белок, яблочный сок, сахар, агар-агар, пищевые красители')
+    elif text == "доставка":
+        await update.message.reply_text('Яндекс Go\n'
+            'Этот вид доставки вы оплачиваете самостоятельно. В согласованное заранее время я сообщаю вам стоимость, '
+            'которую рассчитало приложение до вашего адреса и отправляю ваш заказ. Вы оплачиваете стоимость доставки '
+            'курьеру при получении.\n\n'
+            'Самовывоз\n'
+            'Забрать свой заказ вы можете по адресу: г. Саратов, Ленинский район (Солнечный), ул. Уфимцева д. 3')
+
 # Стартовая команда
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    await update.message.reply_text('Привет! Добро пожаловать в ФлораЗефир!\n' 
-                                     'Здесь ты можешь узнать информацию о ценах, доставке, составе.' 
-                                     'Достаточно написать соответствующие слова.\n' 
-                                     'Нажми /catalog для просмотра товаров.\n'
-                                     'Нажми /promotion, чтобы узнать о наших акциях')
+    menu_keyboard = ReplyKeyboardMarkup(
+        [
+            [KeyboardButton("Каталог"), KeyboardButton("Акции")],
+            [KeyboardButton("Состав"), KeyboardButton("Доставка")]
+        ],
+        resize_keyboard=True
+    )
+    await update.message.reply_text(
+        'Привет! Добро пожаловать в ФлораЗефир!\n'
+        'Здесь ты можешь узнать информацию о ценах, доставке, составе.'
+        'Достаточно написать соответствующие слова.\n'
+        'Нажми /catalog для просмотра товаров.\n'
+        'Нажми /promotion, чтобы узнать о наших акциях',
+        reply_markup=menu_keyboard
+    )
 
 
 # Отображение каталога с выбором разделов
@@ -205,6 +238,8 @@ def main():
     app.add_handler(CallbackQueryHandler(order, pattern=r'^order_[^_]+_\d+$'))
     app.add_handler(CallbackQueryHandler(promotion_button, pattern=r'^promo_\d+$'))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_faq))
+    # Добавляем обработчик для кнопок меню
+    app.add_handler(MessageHandler(filters.Regex("^(Каталог|Акции|Состав|Доставка)$"), handle_menu_buttons))
 
     app.run_polling()
 
